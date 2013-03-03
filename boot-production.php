@@ -6,7 +6,7 @@ That includes loading Routers and other resources (database connections, etc.).
 
 /* ----------------------------------------------------------- */
 // Set the web root path
-Backbone::$root = "/github/halprinlaw.com/";
+Backbone::$root = "/";
 
 /* ----------------------------------------------------------- */
 // Load routers
