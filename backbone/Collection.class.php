@@ -13,11 +13,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 /*
 @fileoverview
 Base Collection class for representing an ordered list of model objects.
+
+@since 0.1.0
 */
 
 Backbone::uses("Model");
 
-class Collection
+class Collection implements Iterator
 {
 	/* The database connection */
 	protected $_db = null;
@@ -45,13 +47,13 @@ class Collection
 	{
 		if(!$table || empty($table))
 			return; // bad
-		$options = array_merge($options, array(
+		$options = array_merge(array(
 			"model" => "Model",
 			"db" => "default"
-		));
+		), $options);
 		$this->_table = $table;
 		$this->_model = $options['model'];
-		$this->_db = Connections::get($options['db']);
+		$this->_db = (is_string($options['db']) ? Connections::get($options['db']) : $options['db']);
 	}
 	
 	/*
@@ -102,6 +104,7 @@ class Collection
 		}
 		$this->_models = $result->fetchAll();
 		$this->length = $result->numRows();
+		$this->rewind();
 		return true;
 	}
 	
@@ -164,7 +167,15 @@ class Collection
 	*/
 	public function remove($id)
 	{
-		$model = new $this->_model($this->_table, $this->_db);
+		if($this->_model != "Model")
+		{
+			Backbone::uses("/models/".$this->_model);
+			$model = new $this->_model($this->_db);
+		}
+		else
+		{
+			$model = new $this->_model($this->_table, $this->_db);
+		}
 		if($model->fetch($id))
 		{
 			if($model->delete())
@@ -179,20 +190,29 @@ class Collection
 	/* Rewind the Iterator to the first element */
 	public function rewind() 
 	{
-        $this->_position = 0;
-    }
+        	$this->_position = 0;
+	}
 
 	/* Return the current model element */
-    public function current() 
+   	public function current() 
 	{
 		if(isset($this->_models[$this->_position]))
 		{
-			$model = new $this->_model($this->_table, $this->_db);
+			if($this->_model != "Model")
+			{
+				Backbone::uses("/models/".$this->_model);
+				$model = new $this->_model($this->_db);
+			}
+			else
+			{
+				$model = new $this->_model($this->_table, $this->_db);
+			}
 			$model->set($this->_models[$this->_position]);
+			$model->clearChanged();
 			return $model;
 		}
 		return null;
-    }
+    	}
 	
 	/* Returns the current element's raw attributes */
 	public function currentAttributes()
@@ -203,22 +223,48 @@ class Collection
 	}
 
 	/* Return the position of the current element */
-    public function position() 
+    	public function position() 
 	{
-        return $this->_position;
-    }
+        	return $this->_position;
+    	}
+    
+    	/* Alias for position() */
+	public function key()
+	{
+		return $this->position();
+	}
 
-	/* Move forward to next element */
-    public function next() 
-	{
-        ++$this->_position;
-    }
+	/* 
+	Return the current element and move forward to next element 
+	@return [Object] The current element before the position is incremented
+	*/
+    	public function next() 
+    	{
+    		$cur = $this->current();
+        	++$this->_position;
+        	return $cur;
+    	}
 	
-	/* Checks if current position is valid */
-    public function items()
+	/* 
+	Checks if current position is valid 
+	@return [boolean] True if the positino is valid, false otherwise
+	*/
+	public function items()
 	{
-        return isset($this->_models[$this->_position]);
-    }
+	    return isset($this->_models[$this->_position]);
+	}
+    
+    	/* Alias for items() */
+	public function hasNext()
+	{
+		return $this->items();
+	}
+	
+	/* Alias for items() */
+	public function valid()
+	{
+	return $this->items();
+	}
 	
 	/*
 	Pluck an attribute from each model in the collection.
@@ -248,15 +294,13 @@ class Collection
 		if($compact)
 		{
 			$collection = array();
-			if(count($this->_models) == 0)
-				return $collection;
 			foreach($this->_models as $attributes)
 				$collection[] = array_values($attributes);
 			return $collection;
 		}
 		return $this->_models;
 	}
-		
+	
 	/*
 	Get the associated model classname
 	
@@ -276,7 +320,7 @@ class Collection
 	{
 		return $this->_table;
 	}
-	
+			
 	/*
 	Reset the collection to an empty state
 	*/

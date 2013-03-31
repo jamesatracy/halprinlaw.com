@@ -11,8 +11,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 /*
-Base View class
+@fileoverview
+Base class for all Backbone.php views.
+
+@since 0.1.0
 */
+
 class View
 {
 	/* Array of view properties */
@@ -71,10 +75,10 @@ class View
 	Exs: 
 	
 		To include /views/about.php:	
-	    $view->load("about");
+	    $view->display("about");
 		
 		To include /views/products/hammer.php
-		$view->load("products/hammer");
+		$view->display("products/hammer");
 		
 	@param [string] name The name of the view
 	*/

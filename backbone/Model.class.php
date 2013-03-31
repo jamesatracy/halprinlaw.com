@@ -15,6 +15,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 Base Model class for database objects. 
 Provides basic methods for creating, updating, fetching, and validating model data.
 This class can be used on its own or extended to implement more specialized model functionality.
+
+@since 0.1.0
 */
 
 Backbone::uses("Schema");
@@ -36,9 +38,14 @@ class Model extends Schema
 	/* Hash map of model associations */
 	protected $_models = array();
 	
+	/* Hash map of collection associations */
+	protected $_collections = array();
 	
 	/* Array of has one model association definitions */
 	public $hasModels = array();
+		
+	/* Array of has one collection association definitions */
+	public $hasCollections = array();
 	
 	/* Array of additional where conditions to be applied to every model db action */
 	public $where = array();
@@ -77,11 +84,16 @@ class Model extends Schema
 		$this->_errors = array();
 		$attributes = array();
 		if(!$this->_db || !$this->_db->isConnected())
+		{
+			$this->_errors[] = get_class($this).": No database connection.";
 			return false;
-			
+		}
+		
 		// select
 		$where = $this->where;
 		$where[$this->getID()] = $id;
+		if(isset($options['where']))
+			$where = array_merge($where, $options['where']);
 		
 		$result = $this->_db->selectAll(
 			$this->_table, 
@@ -103,7 +115,7 @@ class Model extends Schema
 				}
 				return true;
 			}
-			$this->_errors = "No results returned";
+			$this->_errors[] = get_class($this).": No results returned";
 		}
 		else
 		{
@@ -184,7 +196,10 @@ class Model extends Schema
 	public function save()
 	{
 		if(!$this->_db || !$this->_db->isConnected())
+		{
+			$this->_errors[] = get_class($this).": No database connection.";
 			return false;
+		}
 		$attributes = array();
 		foreach($this->_changed as $key => $value)
 		{
@@ -243,7 +258,7 @@ class Model extends Schema
 			// attributes as "data".
 			//
 			// Ex: array("car_id => "12", "data" => array("make" => "honda", "model" => "accord"))
-			Events::trigger("model.changed.".$this->_table, array($this->getID() => $this->get($this->getID()), "data" => $attributes));
+			Events::trigger($this->_table.".model.changed", array($this->getID() => $this->get($this->getID()), "data" => $attributes));
 			return true;
 		}
 		return false;
@@ -256,10 +271,13 @@ class Model extends Schema
 	public function delete()
 	{
 		if(!$this->_db || !$this->_db->isConnected())
+		{
+			$this->_errors[] = get_class($this).": No database connection.";
 			return false;
+		}
 			
 		$where = $this->where;
-		$where[$this->getID()] = $id;
+		$where[$this->getID()] = $this->get($this->getID());
 				
 		$result = $this->_db->delete(
 			$this->_table, 
@@ -274,7 +292,7 @@ class Model extends Schema
 			$this->_errors[] = $this->_db->getError();
 			return false;
 		}
-		Events.trigger("model.deleted.".$this->_table, array($this->getID() => $this->get($this->getID())));
+		Events::trigger($this->_table.".model.deleted", array($this->getID() => $this->get($this->getID())));
 		$this->clear();
 		return true;
 	}
@@ -317,6 +335,31 @@ class Model extends Schema
 		return null;
 	}
 	
+	/* 
+	Get a reference to an associated collection, if it exists.
+	The collection must have been fetched via the "with" option or $fetch
+		must be set to true.
+	
+	@param [string] $key This collection's table name.
+	@param [boolean] $fetch Whether or not to force a fetch of the collection
+	@return [object,null] Returns the collection object, or null
+	*/
+	public function collection($key, $fetch = false)
+	{
+		if($fetch)
+		{
+			if(isset($this->hasCollections[$key]))
+			{
+				$this->_collections[$key] = $this->_fetchCollection($key);
+				return $this->_collections[$key];
+			}
+			return null;
+		}
+		if(isset($this->_collections[$key]))
+			return $this->_collections[$key];
+		return null;
+	}
+	
 	/*
 	Return a JSON representation of the model.
 	This is not a string, but an associative array that you can pass to JSON::stringify().
@@ -335,17 +378,30 @@ class Model extends Schema
 			if($model)
 				$models[$key] = $model->toJSON($compact);
 		}
-		return (array("attributes" => ($compact ? array_values($this->_attributes) : $this->_attributes), "models" => $models));
+		$collections = array();
+		foreach($this->_collections as $key => $collection)
+		{
+			if($collection)
+				$collections[$key] = $collection->toJSON($compact);
+		}
+		return (array("attributes" => ($compact ? array_values($this->_attributes) : $this->_attributes), "models" => $models, "collections" => $collections));
 	}
 	
 	/*
 	Returns the raw attributes array.
 	
+	@param [array] $include. Include only the attributes in this list. Optional.
 	@return [array] The raw attributes array.
 	*/
-	public function getAttributes()
+	public function getAttributes($include = null)
 	{
-		return $this->_attributes;
+		if(!$include)
+			return $this->_attributes;
+			
+		$attributes = array();
+		foreach($include as $i => $key)
+			$attributes[$key] = $this->_attributes[$key];
+		return $attributes;
 	}
 	
 	/*
@@ -391,6 +447,12 @@ class Model extends Schema
 		$this->_changed = array();
 	}
 	
+	/* Clear the changed array */
+	public function clearChanged()
+	{
+		$this->_changed = array();
+	}
+	
 	/*
 	Has the model changed since the last update?
 	In other words, are there any unsaved changes?
@@ -430,6 +492,15 @@ class Model extends Schema
 		$this->_sanitations = $sanitations;
 	}
 	
+	/*
+	Get the table name used for this model
+	@return [string] The table name
+	*/
+	public function getTable()
+	{
+		return $this->_table;
+	}
+	
 	/* Magic __get method that internally calls get() */
 	public function __get($attr)
 	{
@@ -455,13 +526,22 @@ class Model extends Schema
 	protected function _with($with)
 	{
 		$this->_models = array();
+		$this->_collections = array();
 		if(is_string($with))
 			$with = array($with);
 
 		foreach($with as $index => $foreign_key)
 		{
-			// get the model
-			$this->_models[$foreign_key] = $this->_fetchModel($foreign_key);
+			if(isset($this->hasModels[$foreign_key]))
+			{
+				// get the model
+				$this->_models[$foreign_key] = $this->_fetchModel($foreign_key);
+			}
+			else if (isset($this->hasCollections[$foreign_key]))
+			{
+				// get the collection
+				$this->_collections[$foreign_key] = $this->_fetchCollection($foreign_key);
+			}
 		}
 	}
 	
@@ -485,10 +565,36 @@ class Model extends Schema
 				Backbone::uses($module);
 				if(class_exists($classname))
 				{
-					$instance = new $classname;
+					$instance = new $classname($this->_db);
 					if($instance->fetch($this->get($key)))
 						return $instance;
 				}
+			}
+		}
+		return null;
+	}
+	
+	/*
+	Internal function to fetch an associated collection
+	*/
+	protected function _fetchCollection($key)
+	{
+		if(isset($this->hasCollections[$key]))
+		{
+			$options = $this->hasCollections[$key];
+			if(!isset($options['collection']))
+				continue;
+			$classname = $options['collection'];
+			// model association exists
+			$module = $classname;
+			if(substr($module, 0, 1) != "/")
+				$module = "/models/".$module;
+			Backbone::uses($module);
+			if(class_exists($classname))
+			{
+				$instance = new $classname($this->_db);
+				if($instance->fetch(array("where" => array($options['key'] => $this->get($this->_id)))))
+					return $instance;
 			}
 		}
 		return null;

@@ -10,6 +10,13 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/*
+@fileoverview
+Base class for all Backbone.php routers.
+
+@since 0.1.0
+*/
+
 class Router 
 {
 	/* Array of route mappings */
@@ -18,9 +25,22 @@ class Router
 	/* The active view class for the request */
 	protected $view;
 	
+	/* The root of the router's url maps, if any */
+	public $root = "";
+	
 	public function __construct()
 	{
 		$this->view = new View();
+	}
+	
+	/*
+	Get the list of routes for this Router
+	
+	@return [array] The array of routes
+	*/
+	public function getRoutes()
+	{
+		return $this->_routes;
 	}
 	
 	/*
@@ -57,12 +77,19 @@ class Router
 		$request = Backbone::$request;
 		$success = false;
 		$uri = $request->here();
+		if($this->root != "")
+		{
+			if(strpos($uri, $this->root) != 0)
+				return false; // skip these routes
+		}
 		foreach($this->_routes as $pattern => $callback)
 		{
-			$pattern = str_replace(array(":alphanum", ":alpha", ":number"), array("([a-z0-9_]+)", "([a-z_]+)", "([0-9]+)"), $pattern);
+			$original = $pattern;
+			$pattern = str_replace(array(":alphanum", ":alpha", ":number"), array("([a-z0-9_\-]+)", "([a-z_\-]+)", "([0-9]+)"), $pattern);
 			if(preg_match("{^".$pattern."$}", $uri, $matches))
 			{
 				// url match
+				$this->pattern = $original;
 				if(method_exists($this, $callback))
 				{
 					if($this->onPreRouteHook($uri))

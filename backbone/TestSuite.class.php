@@ -12,7 +12,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 Backbone::uses(array("DataType", "DataSet"));
 
-/* Base class for Test Suites */
+/*
+@fileoverview
+Base class for Test Suites.
+
+@since 0.1.0
+*/
+
 class TestSuite
 {	
 	protected $messages;
@@ -21,7 +27,11 @@ class TestSuite
 	public $count;
 	public $passed;
 	public $failed;
+	public $aborted;
 	public $output = array(); // for buffering output
+	public $error_output = array(); // for buffering erros output
+	public $last_caption = "";
+	public $command_line = false;
 	
 	public function __construct()
 	{
@@ -33,7 +43,9 @@ class TestSuite
 		$this->count = 0;
 		$this->passed = 0;
 		$this->failed = 0;
+		$this->aborted = false;
 		$this->output = array();
+		$this->error_output = array();
 	}
 	
 	public function startUp()
@@ -46,18 +58,76 @@ class TestSuite
 		return; // stub function
 	}
 	
+	/* Abort this suite */
+	public function abort($errors = "")
+	{
+		if($errors)
+			$this->errors($errors);
+		$this->aborted = true;
+	}
+	
 	/* Output a caption */
 	public function caption($text)
 	{
-		$this->output[] = '<div style="font-style: italic; margin-top:5px;">'.$text.':</div>';
+		if($this->command_line)
+		{
+			$this->output[] = "* ".$text.PHP_EOL;
+			$this->last_caption = "* ".$text.PHP_EOL;
+			//$this->error_output[] = "* ".$text.PHP_EOL;
+		}
+		else
+		{
+			$this->output[] = '<div style="font-style: italic; margin-top:5px;">*'.$text.'</div>';
+			//$this->last_caption = '<div>* '.$text.'</div>';
+			$this->error_output[] = '<div>* '.$text.'</div>';
+		}
 	}
 	
 	/* Output error messages */
 	public function errors($text)
 	{
-		if(is_array($text))
-			$text = join("<br/>====> ", $text);
-		$this->output[] = '<div>====> '.$text.'</div>';
+		if($this->command_line)
+		{
+			if(is_array($text))
+				$text = join("\n====> ", $text);
+			$this->output[] = '====> '.$text.PHP_EOL;
+			$this->error_output[] = '====> '.$text.PHP_EOL;
+		}
+		else
+		{
+			if(is_array($text))
+				$text = join("<br/>====> ", $text);
+			$this->output[] = '<div>====> '.$text.'</div>';
+			$this->error_output[] = '<div>====> '.$text.'</div>';
+		}
+	}
+	
+	/* Trigger other error (not from a test case) */
+	public function triggerError($message)
+	{
+		$this->count++;
+		$this->failed++;
+		if($this->command_line)
+		{
+			$this->output[] = 'Error Triggered: '.$message.PHP_EOL;
+			$this->error_output[] = 'Error Triggered: '.$message.PHP_EOL;
+		}
+		else
+		{
+			$this->output[] = '<div style="color: red;">Error Triggered: '.$message.'</div>';
+			$this->error_output[] = '<div style="color: red;">Error Triggered: '.$message.'</div>';
+		}
+		$backtrace = debug_backtrace();
+		if($this->command_line)
+		{
+			$this->output[] = '====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].PHP_EOL;
+			$this->error_output[] = '====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].PHP_EOL;
+		}
+		else
+		{
+			$this->output[] = '<div>====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].'</div>';
+			$this->error_output[] = '<div>====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].'</div>';
+		}
 	}
 	
 	/* Check for a true condition */
@@ -376,7 +446,10 @@ class TestSuite
 	{
 		$this->count++;
 		$this->passed++;
-		$this->output[] = '<div style="color: green;">Test Passed: '.$message.'</div>';
+		if($this->command_line)
+			$this->output[] = 'Test Passed: '.$message.PHP_EOL;
+		else
+			$this->output[] = '<div style="color: green;">Test Passed: '.$message.'</div>';
 	}
 	
 	/* Internal function for formattign failed assertions */
@@ -384,9 +457,29 @@ class TestSuite
 	{
 		$this->count++;
 		$this->failed++;
-		$this->output[] = '<div style="color: red;">Assertion Failed: '.$message.'</div>';
+		if($this->command_line)
+		{
+			$this->output[] = 'Assertion Failed: '.$message.PHP_EOL;
+			$this->error_output[] = $this->last_caption;
+			$this->error_output[] = 'Assertion Failed: '.$message.PHP_EOL;
+		}
+		else
+		{
+			$this->output[] = '<div style="color: red;">Assertion Failed: '.$message.'</div>';
+			$this->error_output[] = $this->last_caption;
+			$this->error_output[] = '<div style="color: red;">Assertion Failed: '.$message.'</div>';
+		}
 		$backtrace = debug_backtrace();
-		$this->output[] = '<div>====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].'</div>';
+		if($this->command_line)
+		{
+			$this->output[] = '====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].PHP_EOL;
+			$this->error_output[] = '====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].PHP_EOL;
+		}
+		else
+		{
+			$this->output[] = '<div>====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].'</div>';
+			$this->error_output[] = '<div>====> '.$backtrace[1]['file'].' : '.$backtrace[1]['line'].'</div>';
+		}
 	}
 	
 	public function set($key, $value)

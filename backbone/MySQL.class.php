@@ -10,18 +10,14 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-Backbone::uses(array("DataSource", "MySQLResult"));
-
-// Default configurations
-Backbone::$config->set("mysql.log", false);
-Backbone::$config->set("mysql.logfile", "mysql.log");
-
 /*
-LOGGING
-To set mysql logging to true, Backbone::$config->set("mysql.log", true)
-To change the log file, Backbone::$config->set("mysql.logfile", "mysql.log")
-	File name is relative to the application's web root and must be writable.
+@fileoverview
+Class for connecting and interacting with a MySQL database.
+
+@since 0.1.0
 */
+
+Backbone::uses(array("DataSource", "MySQLResult", "MySQLLogger"));
 
 /*
 @fileoverview
@@ -32,33 +28,37 @@ class MySQL extends DataSource
 	/* The mysql database connection */
 	protected $_connection = null;
 	
+	/* An optional name for this connection */
+	protected $_name = array();
+	
+	/* The connection options used for this connection */
+	protected $_options = array();
+	
 	/* The mysql fetch mode */
 	protected $_fetch_mode = MySQLResult::FETCH_ASSOC;
 	
 	/* The last mysql result (MySQLResult) object */
 	protected $_result = null;
-	
-	/* The time it took for the last mysql query to execute */
-	protected $_duration = 0;
-	
-	/* The number of rows return in the last mysql query */
-	protected $_num_rows = 0;
-	
+		
 	/* An array of external hooks into the MySQL class */
 	protected $_hooks = array();
-	
-	/* Query logging */
-	protected $_queries_count = 0;
-	protected $_queries_time = 0;
 	
 	/*
 	Connect to a data source
 	
 	@param [array] $options An array of data source specific options.
 	*/
-	public function connect($options)
+	public function connect($options, $name = "")
 	{
 		parent::connect($options);
+
+		if(!isset($options['new_link']))
+			$options['new_link'] = false;
+		if(!isset($options['compress']))
+			$options['compress'] = MYSQL_CLIENT_COMPRESS;
+		
+		$this->_options = $options;
+		$this->_name = $name;
 		$this->_connection = mysql_connect($options['server'], $options['user'], $options['pass']) or die(mysql_error());
 	}
 	
@@ -196,7 +196,7 @@ class MySQL extends DataSource
 				if(isset($value['type']))
 					$type = $value['type'];
 				if(!isset($value['fields']))
-					return false;
+					return new MySQLResult(null);
 				$joins .= $type." JOIN ".$this->formatTable($key)." ON ".$this->format($value['fields'][0])." = ".$this->format($value['fields'][1])." ";
 			}
 			$sql .= " ".$joins;
@@ -216,6 +216,11 @@ class MySQL extends DataSource
 				$where = $options['where'];
 			}
 			$sql .= " WHERE ".$where;
+		}
+		// group by
+		if(isset($options['group_by']))
+		{
+			$sql .= " GROUP BY ".$this->format($options['group_by']);
 		}
 		// order by
 		if(isset($options['order_by']))
@@ -261,6 +266,9 @@ class MySQL extends DataSource
 	*/
 	public function count($table, $options)
 	{
+		$options['limit'] = null;
+		$options['order_by'] = null;
+		
 		$result = $this->select($table, "COUNT(*)", $options);
 		if($this->getError())
 			return false;
@@ -398,15 +406,14 @@ class MySQL extends DataSource
 			return new MySQLResult(null);
 		
 		$t = microtime(true);
-		$this->_result = new MySQLResult(mysql_query($query, $this->_connection));
-		$this->_result->setFetchMode($this->_fetch_mode);
-		
+		$this->_result = new MySQLResult(mysql_query($query, $this->_connection));		
 		if(Backbone::$config->get("mysql.log"))
 		{
-			$this->_duration = round((microtime(true) - $t), 4);
-			$this->_num_rows = $this->_result->numRows();
-			$this->logQuery($query);
+			$duration = round((microtime(true) - $t), 4);
+			$num_rows = $this->_result->numRows();
+			MySQLLogger::logQuery($this->_options['server'], $query, $duration, $num_rows, $this->_name);
 		}
+		$this->_result->setFetchMode($this->_fetch_mode);
 		return $this->_result;
 	}
 	
@@ -420,72 +427,6 @@ class MySQL extends DataSource
 		if(!$this->isConnected())
 			return 0;
 		return mysql_insert_id($this->_connection);
-	}
-	
-	/*
-	Log a mysql query
-	To set mysql logging to true, Backbone::$config->set("mysql.log", true)
-	To change the log file, Backbone::$config->set("mysql.logfile", "mysql.log")
-		File name is relative to the application's web root.
-		
-	@param [string] $sql The query string
-	*/
-	public function logQuery($sql) 
-	{
-		$this->_queries_count++;
-		$this->_queries_time += $this->_duration;
-
-		$ob = $sql."\r\nNum Rows: ".$this->_num_rows."\r\nDuration: ".$this->_duration." seconds\r\n";
-		if(mysql_error())
-			$ob .= "Error: ".mysql_error()."\r\n";
-		$ob .= "\r\n";
-		file_put_contents(APPPATH.Backbone::$config->get("mysql.logfile"), $ob, FILE_APPEND);
-	}
-	
-	/*
-	Writes the current running totals to the end of the query log.
-	*/
-	public function tallyQueryLog()
-	{
-		if(Backbone::$config->get("mysql.log") == true)
-		{
-			if(file_exists(APPPATH.Backbone::$config->get("mysql.logfile")))
-			{
-				$ob = "----------------------------------------------------------------\r\n"; 
-				$ob .= "Total Queries: ".$this->_queries_count."\r\n";
-				$ob .= "Total Duration: ".$this->_queries_time." seconds\r\n";
-				file_put_contents(APPPATH.Backbone::$config->get("mysql.logfile"), $ob, FILE_APPEND);
-			}
-		}
-	}
-	
-	/*
-	Clear the mysql log file if mysql logging is set to true.
-	To set mysql logging to true, Backbone::$config->set("mysql.log", true)
-	To change the log file, Backbone::$config->set("mysql.logfile", "mysql.log")
-		File name is relative to the application's web root.
-	*/
-	public function clearQueryLog()
-	{
-		if(Backbone::$config->get("mysql.log") == true)
-		{
-			if(file_exists(APPPATH.Backbone::$config->get("mysql.logfile")))
-			{
-				file_put_contents(APPPATH.Backbone::$config->get("mysql.logfile"), "");
-			}
-		}
-	}
-	
-	/* Get the current running total query count */
-	public function getQueryCount()
-	{
-		return $this->_queries_count;
-	}
-	
-	/* Get the current running total query time in milliseconds */
-	public function getQueryTime()
-	{
-		return $this->_queries_time;
 	}
 	
 	/*
@@ -524,7 +465,12 @@ class MySQL extends DataSource
             }
             else
             {
-                return substr($name, 0, $first + 1).$this->format($var).")";
+				$str = array();
+				$tmp = explode(",", $var);
+				$str[] = $this->format(trim($tmp[0]));
+				if(isset($tmp[1]))
+					$str[] = $tmp[1];
+                return substr($name, 0, $first + 1).join(",",$str).")";
             }
         }
 
@@ -577,6 +523,8 @@ class MySQL extends DataSource
 					{
 						$in = $value[0];
 						array_shift($value);
+						if(is_array($value[0]))
+							$value = $value[0];
 						$tmp[] = $this->format($key)." ".$in." (".join(",", $value).")";
 					}
 					else

@@ -11,8 +11,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 /*
-Class for managing connections to data sources
+@fileoverview
+Class for managing connections to data sources.
+
+@since 0.1.0
 */
+
 class Connections
 {
 	/* List of open connections */
@@ -33,7 +37,7 @@ class Connections
 		if(isset(self::$_connections[$name]))
 			self::$_connections[$name]->disconnect();
 		$source = new $type;
-		$result = $source->connect($config);
+		$result = $source->connect($config, $name);
 		self::$_connections[$name] = $source;
 		return $source;
 	}
@@ -59,7 +63,30 @@ class Connections
 	public static function remove($name)
 	{
 		if(isset(self::$_connections[$name]))
-			self::$_connections[$name]->disconnect();		
+		{
+			self::$_connections[$name]->disconnect();
+			unset(self::$_connections[$name]);
+		}
+	}
+	
+	/* 
+	Close all active connections
+	*/
+	public static function closeAll()
+	{
+		foreach(self::$_connections as $name => $db)
+		{
+			$db->disconnect();
+			unset(self::$_connections[$name]);
+		}
+	}
+	
+	/*
+	Get a list of all active connections
+	*/
+	public static function enumerateConnections()
+	{
+		return array_keys(self::$_connections);
 	}
 };
 

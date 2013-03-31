@@ -11,7 +11,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 /*
+@fileoverview
 BackboneTest is the unit testing framework for Backbone.php
+
+@since 0.1.0
 */
 
 class BackboneTest
@@ -21,6 +24,16 @@ class BackboneTest
 	
 	/* Current suite */
 	protected static $current = null;
+	
+	/* Whether or not to run on the command line */
+	public static $command_line = false;
+	
+	/* Optional file to output the results to */
+	public static $output_file = false;
+	
+	/* Totals */
+	public static $total_passed = 0;
+	public static $total_failed = 0;
 	
 	/*
 	Load a test suite
@@ -84,7 +97,13 @@ class BackboneTest
 	*/
 	public static function run($classname = null, $id = null)
 	{
+		self::$total_passed = 0;
+		self::$total_failed = 0;
+		
 		$suites = self::$suites;
+		
+		if(self::$output_file)
+			file_put_contents(self::$output_file, "");
 		
 		if($classname == null)
 		{
@@ -96,7 +115,14 @@ class BackboneTest
 					self::_runSuite($suite, $object);
 				}
 			}
-			echo "<hr/>";
+			if(self::$command_line)
+			{
+				self::startOutput();
+				echo "-----------------------------------------------------".PHP_EOL;
+				self::endOutput();
+			}
+			else
+				echo "<hr/>";
 		}
 		else
 		{
@@ -115,8 +141,21 @@ class BackboneTest
 					// run one of the tests for this suite
 					self::_runSuite($suites[$classname][$id], $classname);
 				}
-				echo "<hr/>";
+				if(self::$command_line)
+				{
+					self::startOutput();
+					echo "-----------------------------------------------------".PHP_EOL;
+					self::endOutput();
+				}
+				else
+					echo "<hr/>";
 			}
+		}
+		if(self::$command_line)
+		{
+			self::startOutput();
+			echo "TOTAL PASSED: ".number_format(self::$total_passed).", TOTAL FAILED: ".number_format(self::$total_failed).PHP_EOL;
+			self::endOutput();
 		}
 	}
 	
@@ -133,7 +172,17 @@ class BackboneTest
 		//$tests = $suite['tests'];
 		$tests = $object::getTests();
 		$count = count($tests);
-		echo "<hr/><h3>".$name." (".$count.")</h3>";
+		
+		if(self::$command_line)
+		{
+			self::startOutput();
+			echo "-----------------------------------------------------".PHP_EOL.$name." (".$count.")\n";
+			self::endOutput();
+		}
+		else
+		{
+			echo "<hr/><h3>".$name." (".$count.")</h3>";
+		}
 
 		// loops over specs
 		$index = 1;
@@ -141,24 +190,74 @@ class BackboneTest
 		{
 			if(method_exists($object, $method))
 			{
+				$instance->command_line = self::$command_line;
 				$instance->reset();
 				$instance->startUp();
 				call_user_func(array($instance, $method));
 				$instance->tearDown();
 				$time = time().$index;
-				echo '<div>';
-				echo '<strong onclick="document.getElementById('.$time.').style.display = document.getElementById('.$time.').style.display == \'none\' ? \'block\' : \'none\'" style="cursor:pointer">('.$index.') '.$title.'</strong> ['.$instance->count.' tests. <span style="color:green">'.$instance->passed.' passed</span>. <span style="color:red;'.($instance->failed > 0 ? 'font-weight:bold;': '').'">'.$instance->failed.' failed</span>].';
-				//echo '&nbsp;<a href="'.Backbone::$request->base().Backbone::$request->path()."?name=".$suite['classname']."&id=".$suite['id']."&test=".urlencode($method).'">Run Again</a>';
-				echo '</div>';
-				echo '<div id="'.$time.'" class="suite" style="display:'.($instance->failed > 0 ? 'block' : 'none').'">';
-				// test output
-				echo join("", $instance->output);
-				echo '</div>';
+				if(self::$command_line)
+				{
+					self::startOutput();
+					echo '('.$index.') '.$title.' ['.$instance->count.' tests. '.$instance->passed.' passed. '.$instance->failed.' failed].'.PHP_EOL;
+					if($instance->failed > 0)
+						echo join("", $instance->error_output);
+					self::endOutput();
+				}
+				else
+				{
+					echo '<div>';
+					echo '<strong onclick="document.getElementById('.$time.').style.display = document.getElementById('.$time.').style.display == \'none\' ? \'block\' : \'none\'" style="cursor:pointer">('.$index.') '.$title.'</strong> ['.$instance->count.' tests. <span style="color:green">'.$instance->passed.' passed</span>. <span style="color:red;'.($instance->failed > 0 ? 'font-weight:bold;': '').'">'.$instance->failed.' failed</span>].';
+					//echo '&nbsp;<a href="'.Backbone::$request->base().Backbone::$request->path()."?name=".$suite['classname']."&id=".$suite['id']."&test=".urlencode($method).'">Run Again</a>';
+					echo '</div>';
+					echo '<div id="'.$time.'" class="suite" style="display:'.($instance->failed > 0 ? 'block' : 'none').'">';
+					// test output
+					echo join("", $instance->output);
+					echo '</div>';
+				}
 			}
 			$index++;
-			echo "<br/>";
+			self::$total_passed += $instance->passed;
+			self::$total_failed += $instance->failed;
+			
+			if($instance->aborted)
+			{
+				if(self::$command_line)
+				{
+					self::startOutput();
+					echo 'TEST SUITE ABORTED!'.PHP_EOL;
+					self::endOutput();
+				}
+				else
+				{
+					echo '<div><span style="color:red">TEST SUITE ABORTED!</span></div><br/>';
+				}
+				return; // abort
+			}
+			
+			if(self::$command_line)
+			{
+				self::startOutput();
+				echo PHP_EOL;
+				self::endOutput();
+			}
+			else
+				echo "<br/>";
 		}
 		//echo "<br/>";
+	}
+	
+	protected static function startOutput()
+	{
+		ob_start();
+	}
+	
+	protected static function endOutput()
+	{
+		$output = ob_get_clean();
+		if(self::$output_file)
+			file_put_contents(self::$output_file, $output, FILE_APPEND);
+		echo $output;
 	}
 };
 

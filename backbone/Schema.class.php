@@ -16,6 +16,8 @@ Class for working with MySQL schemas as model representations.
 Supports automatic validation against the schema.
 
 Schema is the base class for Model.
+
+@since 0.1.0
 */
 
 Backbone::uses(array("Connections", "DataType", "JSON", "SchemaRules"));
@@ -271,12 +273,12 @@ class Schema
 		if(isset($field['primary']) && $field['primary'])
 			return;
 			
-		if($value == "NULL")
+		if($value === "NULL")
 		{
 			// can this field be null?
 			if(!$field['acceptNULL'])
 			{
-				$this->_errors[] = "Field `".$name."` cannot be set to NULL.";
+				$this->_errors[] = "Field `".$name."` cannot be set to NULL. ".$value;
 				return;
 			}
 		}
@@ -467,7 +469,7 @@ class Schema
 			}
 			
 			// format type
-			if(substr($type, 0, 3) == "int" || substr($type, 0, 7) == "tinyint" || substr($type, 0, 8) == "smallint" || substr($type, 0, 7) == "mediumint" || substr($type, 0, 7) == "bigint")
+			if(substr($type, 0, 3) == "int" || substr($type, 0, 7) == "tinyint" || substr($type, 0, 8) == "smallint" || substr($type, 0, 9) == "mediumint" || substr($type, 0, 6) == "bigint")
 			{
 				// get size
 				preg_match_all('/\((.*?)\)/', $type, $matches);
@@ -476,11 +478,11 @@ class Schema
 				$attrs["length"] = $matches[1][0];
 				if(stripos($type, "unsigned") !== false)
 				{
-					$attrs["unsigned"] = true;
+					$attrs["unsigned"] = "1";
 				}
 				else
 				{
-					$attrs["unsigned"] = false;
+					$attrs["unsigned"] = "0";
 				}
 				
 				if($default == null && $null == "NO")
