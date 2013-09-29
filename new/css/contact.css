@@ -1,0 +1,14 @@
+#contact-form table,
+#contact-form input[type="text"],
+#contact-form textarea {
+width: 100%;
+}
+
+#contact-form-error {
+font-weight: bold;
+color: red;
+}
+
+#sidebar-questions-form {
+display: none;
+}
