@@ -1,6 +1,6 @@
 halprinlaw.com
 ==============
 
-Website for HalprinLaw
+Website for HalprinLaw.
 
-Mobile responsive website built using (Backbone.php)[https://github.com/jamesatracy/Backbone.php] and Twitter bootstrap.
+Mobile responsive website built using [Backbone.php](https://github.com/jamesatracy/Backbone.php) and Twitter bootstrap.
