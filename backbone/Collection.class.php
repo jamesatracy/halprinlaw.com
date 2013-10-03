@@ -1,52 +1,51 @@
 <?php
-/*
-Collection.class.php
-Copyright (C) 2012 James Tracy
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
-/*
-@fileoverview
-Base Collection class for representing an ordered list of model objects.
-
-@since 0.1.0
-*/
+/**
+ * Backbone.php
+ * 
+ * @author	James Tracy <james.a.tracy@gmail.com>
+ * @copyright	2012-2013
+ * @license   http://www.opensource.org/licenses/mit-license.php MIT
+ * @link https://github.com/jamesatracy/Backbone.php GitHub Page
+ */
 
 Backbone::uses("Model");
 
+/**
+ * Base Collection class for representing an ordered list of model objects.
+ *
+ * @since 0.1.0
+ */
 class Collection implements Iterator
 {
-	/* The database connection */
+	/** @var MySQL The database connection */
 	protected $_db = null;
 	
-	/* The table associated with this collection */
+	/** @var string The table associated with this collection */
 	protected $_table = "";
 	
-	/* The class name of the model class contained by the collection */
+	/** @var string The class name of the model class contained by the collection */
 	protected $_model = "Model";
 	
-	/* The array of raw model data */
+	/** @var array The array of raw model data */
 	protected $_models = array();
 	
-	/* The length of the data set returned from a call to fetch() */
+	/** @var int The length of the data set returned from a call to fetch() */
 	public $length = 0;
 	
-	/* For iterator implementation */
+	/** @var int For iterator implementation */
 	protected $_position = 0;
 	
-	/* An array of error messages */
+	/** @var array An array of error messages */
 	protected $_errors = array();
 	
-	/* Constructor */
+	/**
+	 * Constructor 
+	 */
 	public function __construct($table, $options = array())
 	{
-		if(!$table || empty($table))
+		if(!$table || empty($table)) {
 			return; // bad
+		}
 		$options = array_merge(array(
 			"model" => "Model",
 			"db" => "default"
@@ -56,274 +55,232 @@ class Collection implements Iterator
 		$this->_db = (is_string($options['db']) ? Connections::get($options['db']) : $options['db']);
 	}
 	
-	/*
-	Get the number of items in a collection without performing a fetch().
-	
-	@param [array] $options Fetch options.
-		"where" => array()
-		"order_by" => array("field", ["ASC"/"DESC"])
-		"limit" => integer
-	@return [integer] The number of items.
-	*/
+	/**
+	 * Get the number of items in a collection without performing a fetch().
+	 * 
+	 * @since 0.1.0
+	 * @param array $options Fetch options.
+	 * 	"where" => array()
+	 * 	"order_by" => array("field", ["ASC"/"DESC"])
+	 * 	"limit" => integer
+	 * @return int The number of items.
+ 	 */
 	public function count($options = array())
 	{
-		if(!$this->_db)
-		{
-			$this->_errors[] = "Invalid Database Connection";
-			return false;
+		if(!$this->_db) {
+			throw new RuntimeException("Collection: Invalid Database Connection");
 		}
 		return $this->_db->count($this->_table, $options);
 	}
 	
-	/*
-	Fetch a collection from the database
-	
-	@param [array] $options Fetch options.
-		"where" => array()
-		"order_by" => array("field", ["ASC"/"DESC"])
-		"limit" => integer
-		"offset" => integer
-	@return [boolean] True if successful.	
-	*/
+	/**
+	 * Fetch a collection from the database
+	 * 
+	 * @since 0.1.0
+	 * @param array $options Fetch options.
+	 * 	"where" => array()
+	 * 	"order_by" => array("field", ["ASC"/"DESC"])
+	 * 	"limit" => integer
+	 * 	"offset" => integer
+	 * @return bool True if successful.	
+	 * @throws RuntimeException
+	 */
 	public function fetch($options = array())
 	{
 		$this->reset();
-		if(!$this->_db)
-		{
-			$this->_errors[] = "Invalid Database Connection";
-			return false;
+		if(!$this->_db) {
+			throw new RuntimeException("Collection: Invalid Database Connection");
 		}
 		
-		$result = $this->_db->selectAll(
+		$this->_models = $this->_db->read(
 			$this->_table,
 			$options
 		);
-		if(!$result->isValid() || $this->_db->getError())
-		{
+		if($this->_db->hasError()) {
 			$this->errors[] = $this->_db->getError();
+			return false;
 		}
-		$this->_models = $result->fetchAll();
-		$this->length = $result->numRows();
+		
+		$this->length = count($this->_models);
 		$this->rewind();
 		return true;
 	}
 	
-	/*
-	Get a model by ID (primary key).
-	Uses the results returned by a call to fetch().
-	
-	@param [string] $id The model's ID
-	@return [Model] The model, or null if not found
-	*/
+	/**
+	 * Get a model by ID (primary key).
+	 * 
+	 * Uses the results returned by a call to fetch().
+	 * 
+	 * @since 0.1.0
+	 * @param string $id The model's ID
+	 * @return Model The model, or null if not found
+	 * @throws RuntimeException
+	 */
 	public function get($id)
 	{
-		if(!$this->_db)
-			return null;
-		$model = null;
-		$schema = new Schema($this->_db);
-		$schema->initialize($this->_table);
-		$key = $schema->getID();
+		if(!$this->_db) {
+			throw new RuntimeException("Collection: Invalid Database Connection");
+		}
+
+		$model = $this->createModel();
+		$key = $model->getID();
+		
 		// loop over models
-		foreach($this->_models as $data)
-		{
-			if(isset($data[$key]) && $data[$key] == $id)
-			{
-				$model = new $this->_model($this->_table, $this->_db);
+		foreach($this->_models as $data) {
+			if(isset($data[$key]) && $data[$key] == $id) {
 				$model->set($data);
-				break;
+				return $model;
 			}
 		}
-		return $model;
-	}
-	
-	/* 
-	Create a new instance of a model in a collection.
-	This is equivalent of creating a new model instance, settign its attributes,
-	and saving it.
-	Fires a "collection.[table name].add" event with the new model.
-	
-	@param [array] $attributes An array of attributes.
-	@return [Model,boolean] Returns the model if successful, false otherwise.
-	*/
-	public function create($attributes)
-	{
-		$model = new $this->_model($this->_table, $this->_db);
-		$model->set($attributes);
-		if($model->save())
-		{
-			Events::trigger("collection.".$this->_table.".add", $model);
-			return $model;
-		}
-		return false;
-	}
-	
-	/*
-	Remove a model from a collection.
-	This is equivalent of loading the model and then deleting it.
-	Fires a "collection.[table name].remove event with the model ID.
-	
-	@param [integer] $id The ID of the model to remove
-	@return [boolean] True if success
-	*/
-	public function remove($id)
-	{
-		if($this->_model != "Model")
-		{
-			Backbone::uses("/models/".$this->_model);
-			$model = new $this->_model($this->_db);
-		}
-		else
-		{
-			$model = new $this->_model($this->_table, $this->_db);
-		}
-		if($model->fetch($id))
-		{
-			if($model->delete())
-			{
-				Events::trigger("collection.".$this->_table.".remove", $id);
-				return true;
-			}			
-		}
-		return false;
-	}
-	
-	/* Rewind the Iterator to the first element */
-	public function rewind() 
-	{
-        	$this->_position = 0;
+		return null;
 	}
 
-	/* Return the current model element */
+	/**
+	 * Return the current model element. 
+	 * Iterator method.
+	 * 
+	 * @since 0.1.0
+	 * @return Model The current model
+	 * @throws RuntimeException
+	 */
    	public function current() 
 	{
-		if(isset($this->_models[$this->_position]))
-		{
-			if($this->_model != "Model")
-			{
-				Backbone::uses("/models/".$this->_model);
-				$model = new $this->_model($this->_db);
-			}
-			else
-			{
-				$model = new $this->_model($this->_table, $this->_db);
-			}
+		if(isset($this->_models[$this->_position])) {
+			$model = $this->createModel();
 			$model->set($this->_models[$this->_position]);
 			$model->clearChanged();
 			return $model;
 		}
 		return null;
-    	}
-	
-	/* Returns the current element's raw attributes */
-	public function currentAttributes()
-	{
-		if(isset($this->_models[$this->_position]))
-			return $this->_models[$this->_position];
-		return null;
 	}
-
-	/* Return the position of the current element */
-    	public function position() 
-	{
-        	return $this->_position;
-    	}
     
-    	/* Alias for position() */
+	/**
+	 * Return the key of the current element. 
+	 * Iterator method.
+	 * 
+	 * This will be the index position into the array of models.
+	 * @since 0.1.0
+	 */
 	public function key()
 	{
-		return $this->position();
+		return $this->_position;
 	}
-
-	/* 
-	Return the current element and move forward to next element 
-	@return [Object] The current element before the position is incremented
-	*/
-    	public function next() 
-    	{
-    		$cur = $this->current();
-        	++$this->_position;
-        	return $cur;
-    	}
 	
-	/* 
-	Checks if current position is valid 
-	@return [boolean] True if the positino is valid, false otherwise
-	*/
-	public function items()
+	/**
+	 * Return the current element and move forward to next element.
+	 * Iterator method.
+	 * 
+	 * @since 0.1.0
+	 * @return Model The current element before the position is incremented
+	 */
+	public function next() 
+	{
+		$cur = $this->current();
+		++$this->_position;
+		return $cur;
+	}
+	
+	/**
+	 * Rewind the Iterator to the first element.
+	 * Iterator method.
+	 * 
+	 * @since 0.1.0
+	 */
+	public function rewind() 
+	{
+		$this->_position = 0;
+	}
+	
+	/**
+	 * Checks if current position is valid.
+	 * Iterator method.
+	 * 
+	 * @since 0.1.0
+	 * @return bool True if the positino is valid, false otherwise
+	 */
+	public function valid()
 	{
 	    return isset($this->_models[$this->_position]);
 	}
-    
-    	/* Alias for items() */
-	public function hasNext()
+	
+	/**
+	 * Returns the current element's raw attributes 
+	 * 
+	 * @since 0.1.0
+	 * @return array The current model's attributes
+	 */
+	public function currentAttributes()
 	{
-		return $this->items();
+		if(isset($this->_models[$this->_position])) {
+			return $this->_models[$this->_position];
+		}
+		return null;
 	}
 	
-	/* Alias for items() */
-	public function valid()
-	{
-	return $this->items();
-	}
-	
-	/*
-	Pluck an attribute from each model in the collection.
-	
-	@param [string] $name The attribute name
-	@return [array] An array of attributes
-	*/
+	/**
+	 * Pluck an attribute from each model in the collection.
+	 * 
+	 * @since 0.1.0
+	 * @param string $name The attribute name
+	 * @return array An array of attributes
+	 */
 	public function pluck($name)
 	{
 		$attrs = array();
-		foreach($this->_models as $model)
-		{
-			if(isset($model[$name]))
+		foreach($this->_models as $model) {
+			if(isset($model[$name])) {
 				$attrs[] = $model[$name];
+			}
 		}
 		return $attrs;
 	}
 			
-	/*
-	Return the raw model data.
-	
-	@param [boolean] $compact Whether or not to include the model keys in the representation.
-	@return [string] A JSON formatted string representation of the collection.
-	*/
+	/**
+	 * Return the raw model data.
+	 * 
+	 * @since 0.1.0
+	 * @param bool $compact Whether or not to include the model keys in the representation.
+	 * @return array Returns an array of raw model data
+	 */
 	public function toJSON($compact = false)
 	{
-		if($compact)
-		{
+		if($compact) {
 			$collection = array();
-			foreach($this->_models as $attributes)
+			foreach($this->_models as $attributes) {
 				$collection[] = array_values($attributes);
+			}
 			return $collection;
 		}
 		return $this->_models;
 	}
 	
-	/*
-	Get the associated model classname
-	
-	@return [string] The associated model's classname.
-	*/
+	/**
+	 * Get the associated model name
+	 * 
+	 * @since 0.1.0
+	 * @return string The associated model's name.
+	 */
 	public function getModelName()
 	{
 		return $this->_model;
 	}
 	
-	/*
-	Get the associated model table
-	
-	@return [string] The associated model's table name.
-	*/
+	/**
+	 * Get the associated model table
+	 * 
+	 * @since 0.1.0
+	 * @return string The associated model's table name.
+	 */
 	public function getTableName()
 	{
 		return $this->_table;
 	}
 			
-	/*
-	Reset the collection to an empty state
-	*/
+	/**
+	 * Reset the collection to an empty state
+	 * 
+	 * @since 0.1.0
+	 */
 	public function reset()
 	{
 		$this->_errors = array();
@@ -331,9 +288,30 @@ class Collection implements Iterator
 		$this->length = 0;
 	}
 	
-	/*
-	Retrieve the last errors
-	*/
+	/**
+	 * Create a new instance of the Collection's model class
+	 *
+	 * @since 0.2.1
+	 * @return mixed The model object
+	 * @throws RuntimeException
+	 */
+	public function createModel()
+	{
+		Backbone::uses($this->_model);
+		$classname = Backbone::getClassName($this->_model);
+		if(!class_exists($classname)) {
+			throw new RuntimeException("Collection: Could not find model of type ".$this->_model);
+		}
+		$model = new $classname($this->_table, $this->_db);
+		return $model;
+	}
+	
+	/**
+	 * Retrieve the last errors
+	 * 
+	 * @since 0.1.0
+	 * @return array An array of error strings
+	 */
 	public function getErrors()
 	{
 		return $this->_errors;

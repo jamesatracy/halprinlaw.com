@@ -1,15 +1,18 @@
 <?php
-/*
-Perform all of your bootstrap operations here in this file.
-That includes loading Routers and other resources (database connections, etc.).
-*/
+/**
+ * Perform all of your bootstrap operations here in this file.
+ * That includes loading Routers and other resources (database connections, etc.).
+ */
 
-/* ----------------------------------------------------------- */
-// Set the web root path
-Backbone::$root = "/halprinlaw.com/";
-
-/* ----------------------------------------------------------- */
-// Load routers
-Backbone::loadRouter("MainRouter");
-
+if(trim(php_uname("n")) === "JAMES-NOTEBOOK") {
+	if(!defined("DEV")) {
+		define("DEV", true);
+	}
+	require("boot-dev.php");
+} else {
+	if(!defined("DEV")) {
+		define("DEV", false);
+	}
+	require("boot-prod.php");
+}
 ?>

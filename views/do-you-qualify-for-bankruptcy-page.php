@@ -1,21 +1,20 @@
 <?php
-$this->extend("master-template");
-$this->extend("sidebar-template");
+$this->extend("layout");
+$this->extend("page");
 
-$this->set("menu", "");
+// vars
+$this->set("title", "Do You Qualify for Bankruptcy?");
+$this->set("active", "");
+
+// css
+$this->prepend("css");
+$this->end();
 ?>
 
-<?php $this->define("banner"); ?>
-<div class="wrapper">
-	<h1>Do You Qualify for Bankruptcy?</h1>
-</div>
-<?php $this->end(); ?>
-
 <?php $this->define("content"); ?>
-<div class="column">
 	<form method="post" action="<?php echo Backbone::$request->link("/thank-you-questionaire/"); ?>">
 		<p>Complete this quick and easy questionniare to see if you qualify for bankruptcy protection:</p>
-		<h2>Debt</h2>
+		<h3>Debt</h3>
 		<p><strong>What type of debt do you have?</strong></p>
 		<table class="comfortable" border="0" cellspacing="5" cellpadding="0" width="100%">
 			<tr>
@@ -39,7 +38,7 @@ $this->set("menu", "");
 		<br/>
 		<div id="assets" style="display:none">
 			<br/>
-			<h2>Assets</h2>
+			<h3>Assets</h3>
 			<p><strong>What type of assets do you have?</strong></p>
 			<table class="comfortable" border="0" cellspacing="5" cellpadding="0" width="100%">
 				<tr>
@@ -63,7 +62,7 @@ $this->set("menu", "");
 		<br/>
 		<div id="manage" style="display:none">
 			<br/>
-			<h2>Is your debt manageable?</h2>
+			<h3>Is your debt manageable?</h3>
 			<p><strong>Please answer the following questions to determine if bankruptcy is necessary:</strong></p>
 			<table class="comfortable" border="0" cellspacing="5" cellpadding="0" width="100%">
 				<tr>
@@ -132,10 +131,10 @@ $this->set("menu", "");
 		<br/>
 		<div id="info" style="display:none">
 			<br/>
-			<h2 class="red">YOU MIGHT QUALIFY FOR BANKRUPTCY RELIEF...</h2>
+			<h3 class="red">YOU MIGHT QUALIFY FOR BANKRUPTCY RELIEF...</h3>
 			<p>Please fill out the contact information below so we can provide you a free consultation to better serve your needs and help your become debt free:</p>
 			<br/>
-			<h2>Personal Information</h2>
+			<h3>Personal Information</h3>
 			<table class="comfortable" border="0" cellspacing="5" cellpadding="0" width="100%">
 				<tr>
 					<td align="right">First Name:</td><td><input type="text" name="first" value="" /></td>
@@ -221,5 +220,4 @@ $this->set("menu", "");
 			<input type="submit" name="next" value="Become Debt-Free Today!" />
 		</div>
 	</form>
-</div>
 <?php $this->end(); ?>

@@ -1,24 +1,24 @@
 <?php
-$this->extend("master-template");
-$this->extend("sidebar-template");
+$this->extend("layout");
+$this->extend("page");
 
-$this->set("menu", "contact");
+// vars
+$this->set("title", "Contact");
+$this->set("active", "contact");
+
+// css
+$this->prepend("css");
+echo $this->html->stylesheet("/css/contact.css");
+$this->end();
 
 // scripts
 $this->prepend("scripts");
-echo $this->html->script("/js/contact.min.js");
+echo $this->html->script("/js/contact.js");
 $this->end();
 ?>
 
-<?php $this->define("banner"); ?>
-<div class="wrapper">
-	<h1>Contact</h1>
-</div>
-<?php $this->end(); ?>
-
 <?php $this->define("content"); ?>
-<div class="column">
-	<div class="center"><strong>HalprinLaw</strong></div>
+	<p align="center"><strong>HalprinLaw</strong></p>
 	<p align="center">1806 South Broad Street<br>
 	Philadelphia, Pennsylvania 19145<br>
 	Phone: 215-389-6913<br>
@@ -30,7 +30,7 @@ $this->end();
 	means of communication.</p>
 	<p>Unless you are a HalprinLaw client and have established a privileged relationship with the Firm, any submitted question/comment is not privileged and may be disclosed to other persons.  By completing this form and submitting your inquiry by clicking the "Submit" button below, you indicate your agreement to these terms.</p>
 	<p><b>NOTE:</b> An Asterisk (*) Indicates REQUIRED Information.</p>
-	<form id="contact-form" method="post" action="<?php echo Backbone::$request->link("/thank-you-contact/"); ?>">
+	<form id="contact-form" method="post" action="<?php $this->url("/thank-you-contact/"); ?>">
 		<table class="comfortable" border="0" cellpadding="0" cellspacing="5">
 			<tr>
 				<td align="right" valign="top"><label>Your Name*:</label></td>
@@ -72,11 +72,10 @@ $this->end();
 			</tr>
 			<tr>
 				<td align="right" colspan="2">
-					<p id="contact-form-error" class="bold red" style="display:none"></p>
-					<input type="image" src="<?php echo Backbone::$request->link("/images/submit.png"); ?>" alt="Submit" onmouseover="this.src='<?php echo Backbone::$request->link("/images/submit-hover.png"); ?>'" onmouseout="this.src='<?php echo Backbone::$request->link("/images/submit.png"); ?>'" />
+					<p id="contact-form-error" style="display:none"></p>
+					<input type="submit" class="btn btn-default" name="submit" value="Submit" />
 				</td>
 			</tr>
 		</table>
 	</form>
-</div>
 <?php $this->end(); ?>

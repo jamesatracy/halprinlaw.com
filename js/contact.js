@@ -23,7 +23,7 @@ $(document).ready(function () {
 			return false;
 		}
 		if ($.trim($("#contact-form-message").val()) == "") {
-			$error.show().html("*** Please type a message.");
+			$error.show().html("*** Please enter a description of your legal issue.");
 			monitor_field($("#contact-form-message"), $error);
 			return false;
 		}
