@@ -33,7 +33,7 @@ $this->end();
 	<form id="contact-form" method="post" action="<?php $this->url("/thank-you-contact/"); ?>">
 		<table class="comfortable" border="0" cellpadding="0" cellspacing="5">
 			<tr>
-				<td align="right" valign="top"><label>Your Name*:</label></td>
+				<td align="right" valign="top"><label>Your Name *:</label></td>
 				<td><input id="contact-form-name" type="text" name="name" size="35" /></td>
 			</tr>
 			<tr>
@@ -61,18 +61,18 @@ $this->end();
 				<td><input type="text" name="fax" size="15" /></td>
 			</tr>
 			<tr>
-				<td align="right" valign="top"><label>Your E-mail*:</label></td>
+				<td align="right" valign="top"><label>Your E-mail *:</label></td>
 				<td><input id="contact-form-email" type="text" name="email" size="35" /></td>
 			</tr>
 			<tr>
-				<td align="left" valign="top" colspan="2"><label><strong>Brief description of your legal issue*:</strong></label></td>
+				<td align="left" valign="top" colspan="2"><label><strong>Brief description of your legal issue *:</strong></label></td>
 			</tr>
 			<tr>
 				<td colspan="2"><textarea id="contact-form-message" name="message" rows="12" cols="50"></textarea></td>
 			</tr>
 			<tr>
 				<td align="right" colspan="2">
-					<p id="contact-form-error" style="display:none"></p>
+					<p id="contact-form-error" class="alert alert-danger" style="display:none"></p>
 					<input type="submit" class="btn btn-default" name="submit" value="Submit" />
 				</td>
 			</tr>
