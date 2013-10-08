@@ -12,7 +12,7 @@ $this->end();
 ?>
 
 <?php $this->define("content"); ?>
-	<form method="post" action="<?php echo Backbone::$request->link("/thank-you-questionaire/"); ?>">
+	<form method="post" action="<?php echo Backbone::$request->link("/thank-you-questionaire/"); ?>" role="form">
 		<p>Complete this quick and easy questionniare to see if you qualify for bankruptcy protection:</p>
 		<h3>Debt</h3>
 		<p><strong>What type of debt do you have?</strong></p>
@@ -34,7 +34,7 @@ $this->end();
 				<td><input type="checkbox" name="child_support" />&nbsp;Child support/alimony payments</td>
 			</tr>
 		</table>
-		<input type="button" name="next" value="Next" onclick="document.getElementById('assets').style.display = 'block';" />
+		<input type="button" name="next" value="Next" class="btn btn-default" onclick="document.getElementById('assets').style.display = 'block';" />
 		<br/>
 		<div id="assets" style="display:none">
 			<br/>
@@ -57,7 +57,7 @@ $this->end();
 					<td>Do you want to surrender an additional investment property?</td><td><input type="radio" name="investment_property" value="yes" />&nbsp;Yes&nbsp;<input type="radio" name="investment_property" value="no" />&nbsp;No</td>
 				</tr>
 			</table>
-			<input type="button" name="next" value="Next" onclick="document.getElementById('manage').style.display = 'block';" />
+			<input type="button" name="next" value="Next" class="btn btn-default" onclick="document.getElementById('manage').style.display = 'block';" />
 		</div>
 		<br/>
 		<div id="manage" style="display:none">
@@ -126,35 +126,37 @@ $this->end();
 					<td>Do you have extra money to provide to your kids such as lunch money, going to the movies, etc.?</td><td width="100px"><input type="radio" name="extra_money" value="yes" />&nbsp;Yes&nbsp;<input type="radio" name="extra_money" value="no" />&nbsp;No</td>
 				</tr>
 			</table>
-			<input type="button" name="next" value="Finish" onclick="document.getElementById('info').style.display = 'block';" />
+			<input type="button" name="next" value="Finish" class="btn btn-default" onclick="document.getElementById('info').style.display = 'block';" />
 		</div>
 		<br/>
 		<div id="info" style="display:none">
 			<br/>
-			<h3 class="red">YOU MIGHT QUALIFY FOR BANKRUPTCY RELIEF...</h3>
+			<div class="alert alert-warning">
+			<h3>YOU MIGHT QUALIFY FOR BANKRUPTCY RELIEF...</h3>
 			<p>Please fill out the contact information below so we can provide you a free consultation to better serve your needs and help your become debt free:</p>
+			</div>
 			<br/>
 			<h3>Personal Information</h3>
 			<table class="comfortable" border="0" cellspacing="5" cellpadding="0" width="100%">
 				<tr>
-					<td align="right">First Name:</td><td><input type="text" name="first" value="" /></td>
+					<td align="right">First Name:</td><td><input type="text" name="first" value="" class="form-control" /></td>
 				</tr>
 				<tr>
-					<td align="right">Last Name:</td><td><input type="text" name="last" value="" /></td>
+					<td align="right">Last Name:</td><td><input type="text" name="last" value="" class="form-control" /></td>
 				</tr>
 				<tr>
-					<td align="right">Email:</td><td><input type="text" name="email" value="" /></td>
+					<td align="right">Email:</td><td><input type="text" name="email" value="" class="form-control" /></td>
 				</tr>
 				<tr>
-					<td align="right">Address:</td><td><input type="text" name="address" value="" /></td>
+					<td align="right">Address:</td><td><input type="text" name="address" value="" class="form-control" /></td>
 				</tr>
 				<tr>
-					<td align="right">City:</td><td><input type="text" name="city" value="" /></td>
+					<td align="right">City:</td><td><input type="text" name="city" value="" class="form-control" /></td>
 				</tr>
 				<tr>
 					<td align="right">State:</td>
 					<td>
-						<select name="state" id="ctl00_cphMain_ddlState" class="form-text">
+						<select name="state" id="ctl00_cphMain_ddlState" class="form-text form-control">
 							<option value=""></option>
 							<option value="AL">Alabama</option>
 							<option value="AK">Alaska</option>
@@ -211,13 +213,13 @@ $this->end();
 					</td>
 				</tr>
 				<tr>
-					<td align="right">ZIP:</td><td><input type="text" name="zip" value="" /></td>
+					<td align="right">ZIP:</td><td><input type="text" name="zip" value="" class="form-control" /></td>
 				</tr>
 				<tr>
-					<td align="right">Phone:</td><td><input type="text" name="phone" value="" /></td>
+					<td align="right">Phone:</td><td><input type="text" name="phone" value="" class="form-control" /></td>
 				</tr>
 			</table>
-			<input type="submit" name="next" value="Become Debt-Free Today!" />
+			<input type="submit" name="next" class="btn btn-default" value="Become Debt-Free Today!" />
 		</div>
 	</form>
 <?php $this->end(); ?>

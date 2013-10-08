@@ -170,10 +170,6 @@ padding:0 10px 10px 0;
 	width: 253px;
 	height: 100px;
 	}
-
-	#phone {
-	display: none;
-	}
 	
 	.free-phone-consultation {
 	font-size: 24px;
@@ -195,10 +191,6 @@ padding:0 10px 10px 0;
 	background-image: url("../images/halprinlaw-330x130.png");
 	width: 330px;
 	height: 130px;
-	}
-	
-	#phone {
-	display: none;
 	}
 }
 

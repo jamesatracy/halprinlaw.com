@@ -27,16 +27,16 @@
 			<div id="sidebar-questions-form">
 				<h3>Have Questions?</h3>
 				<p>Please take a moment to contact us today:</p>
-				<form id="contact-sidebar" method="post" action="<?php $this->url("/thank-you-contact/"); ?>">
+				<form id="contact-sidebar" method="post" action="<?php $this->url("/thank-you-contact/"); ?>" role="form">
 					<p>
 						<label>Name:</label><br/>
-						<input type="text" id="contact-sidebar-name" name="name" style="width:100%" />
+						<input type="text" id="contact-sidebar-name" name="name" class="form-control" placeholder="Enter your name" />
 						<label>Email:</label><br/>
-						<input type="text" id="contact-sidebar-email" name="email" style="width:100%" />
+						<input type="text" id="contact-sidebar-email" name="email" class="form-control" placeholder="Enter your email" />
 						<label>Phone:</label><br/>
-						<input type="text" id="contact-sidebar-phone" name="phone" style="width:100%" />
+						<input type="text" id="contact-sidebar-phone" name="phone" class="form-control" placeholder="Enter your phone number" />
 						<label>Message:</label><br/>
-						<textarea id="contact-sidebar-message" name="message" rows="10" style="width:100%"></textarea>
+						<textarea id="contact-sidebar-message" name="message" rows="10" class="form-control"></textarea>
 						<p id="contact-sidebar-error" class="red bold" style="display:none"></p>
 						<div class="alignright">
 							<input type="submit" class="btn btn-default" value="Submit" />

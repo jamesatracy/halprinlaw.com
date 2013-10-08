@@ -29,53 +29,65 @@ $this->end();
 	through this website though completion of this form.  Submission of an inquiry does not establish an attorneyclient or other relationship. You should not submit information of a confidential nature to HalprinLaw through this 
 	means of communication.</p>
 	<p>Unless you are a HalprinLaw client and have established a privileged relationship with the Firm, any submitted question/comment is not privileged and may be disclosed to other persons.  By completing this form and submitting your inquiry by clicking the "Submit" button below, you indicate your agreement to these terms.</p>
-	<p><b>NOTE:</b> An Asterisk (*) Indicates REQUIRED Information.</p>
-	<form id="contact-form" method="post" action="<?php $this->url("/thank-you-contact/"); ?>">
-		<table class="comfortable" border="0" cellpadding="0" cellspacing="5">
-			<tr>
-				<td align="right" valign="top"><label>Your Name *:</label></td>
-				<td><input id="contact-form-name" type="text" name="name" size="35" /></td>
-			</tr>
-			<tr>
-				<td align="right" valign="top"><label>Home Address:</label></td>
-				<td><input type="text" name="home" size="35" /></td>
-			</tr>
-			<tr>
-				<td align="right" valign="top"><label>City:</label></td>
-				<td><input type="text" name="city" size="35" /></td>
-			</tr>
-			<tr>
-				<td align="right" valign="top"><label>State:</label></td>
-				<td><input type="text" name="state" size="5" /></td>
-			</tr>
-			<tr>
-				<td align="right" valign="top"><label>Zip:</label></td>
-				<td><input type="text" name="zip" size="10" /></td>
-			</tr>
-			<tr>
-				<td align="right" valign="top"><label>Phone:</label></td>
-				<td><input type="text" name="phone" size="15" /></td>
-			</tr>
-			<tr>
-				<td align="right" valign="top"><label>Fax:</label></td>
-				<td><input type="text" name="fax" size="15" /></td>
-			</tr>
-			<tr>
-				<td align="right" valign="top"><label>Your E-mail *:</label></td>
-				<td><input id="contact-form-email" type="text" name="email" size="35" /></td>
-			</tr>
-			<tr>
-				<td align="left" valign="top" colspan="2"><label><strong>Brief description of your legal issue *:</strong></label></td>
-			</tr>
-			<tr>
-				<td colspan="2"><textarea id="contact-form-message" name="message" rows="12" cols="50"></textarea></td>
-			</tr>
-			<tr>
-				<td align="right" colspan="2">
-					<p id="contact-form-error" class="alert alert-danger" style="display:none"></p>
-					<input type="submit" class="btn btn-default" name="submit" value="Submit" />
-				</td>
-			</tr>
-		</table>
+
+	<form id="contact-form" class="form-horizontal" method="post" action="<?php $this->url("/thank-you-contact/"); ?>" role="form">
+		<div class="form-group">
+			<label for="contact-form-name" class="col-lg-2">Your Name *:</label>
+			<div class="col-lg-10">
+				<input id="contact-form-name" type="text" name="name" size="35" class="form-control" placeholder="Required" />
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="contact-form-home" class="col-lg-2">Address:</label>
+			<div class="col-lg-10">
+				<input id="contact-form-home" type="text" name="home" size="35" class="form-control" />
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="contact-form-city" class="col-lg-2">City:</label>
+			<div class="col-lg-10">
+				<input id="contact-form-city" type="text" name="city" size="35" class="form-control" />
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="contact-form-state" class="col-lg-2">State:</label>
+			<div class="col-lg-10">
+				<input id="contact-form-state" type="text" name="state" size="5" class="form-control" />
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="contact-form-zip" class="col-lg-2">Zip:</label>
+			<div class="col-lg-10">
+				<input id="contact-form-zip" type="text" name="zip" size="10" class="form-control" />
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="contact-form-phone" class="col-lg-2">Phone:</label>
+			<div class="col-lg-10">
+				<input id="contact-form-phone" type="text" name="phone" size="15" class="form-control" />
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="contact-form-fax" class="col-lg-2">Fax:</label>
+			<div class="col-lg-10">
+				<input id="contact-form-fax" type="text" name="fax" size="15" class="form-control" />
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="contact-form-email" class="col-lg-2">Your E-mail *:</label>
+			<div class="col-lg-10">
+				<input id="contact-form-email" type="text" name="email" size="35" class="form-control" placeholder="Required" />
+			</div>
+		</div>
+		<p>
+			<label for="contact-form-message">Brief description of your legal issue *:</label>
+			<textarea id="contact-form-message" name="message" rows="12" cols="50" class="form-control" placeholder="Required"></textarea>
+		</p>
+		<p id="contact-form-error" class="alert alert-danger" style="display:none"></p>
+		<div class="form-group">
+			<div class="col-lg-10">
+				<input type="submit" class="btn btn-default" name="submit" value="Submit" />
+			</div>
+		</div>
 	</form>
 <?php $this->end(); ?>
